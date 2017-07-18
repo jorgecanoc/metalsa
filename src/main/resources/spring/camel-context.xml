@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" id="bean-f67c2df8-58a3-4a09-b48b-9c39212a9d4a">
+        <property name="location">
+            <value>classpath:sql.properties</value>
+        </property>
+    </bean>
+    <!--MYSQL bean -->
+    <bean class="org.apache.commons.dbcp.BasicDataSource"
+        destroy-method="close" id="MySQLDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="${db.mysql.url}"/>
+        <property name="username" value="${db.mysql.username}"/>
+        <property name="password" value="${db.mysql.password}"/>
+        <property name="testWhileIdle" value="true"/>
+        <property name="testOnReturn" value="true"/>
+        <property name="validationQuery" value="SELECT 1"/>
+        <property name="testOnBorrow" value="true"/>
+        <property name="maxActive" value="32"/>
+        <property name="maxWait" value="1000"/>
+    </bean>
+    <!--ORACLE bean -->
+    <!--     <bean class="org.apache.commons.dbcp.BasicDataSource" -->
+    <!--         destroy-method="close" id="OracleDataSource"> -->
+    <!--         <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/> -->
+    <!--         <property name="url" value="${db.oracle.url}"/> -->
+    <!--         <property name="username" value="${db.oracle.username}"/> -->
+    <!--         <property name="password" value="${db.oracle.password}"/> -->
+    <!--     </bean>	 -->
+    <bean class="org.apache.camel.component.sql.SqlComponent" id="Mysql">
+        <property name="dataSource" ref="MySQLDataSource"/>
+    </bean>
+    <!--     <bean class="org.apache.camel.component.sql.SqlComponent" id="Oracle"> -->
+    <!--         <property name="dataSource" ref="OracleDataSource"/> -->
+    <!--     </bean> -->
+    <!-- You could also define a traditional camel context here -->
+    <camelContext id="camelContext-3193012f-d1a0-4ae9-91bc-cc32f3ed785e" xmlns="http://camel.apache.org/schema/spring">
+        <propertyPlaceholder id="placeholder" location="classpath:sql.properties"/>
+        <restConfiguration apiContextPath="api-docs" bindingMode="json" component="servlet">
+            <apiProperty key="cors" value="true"/>
+            <apiProperty key="api.title" value="Opportunities API ENDPOINTS"/>
+            <apiProperty key="api.version" value="1.0.0"/>
+        </restConfiguration>
+        <rest path="/user" produces="application/json">
+            <description>Usuarios en Base de Datos</description>
+            <get uri="/getAll">
+                <description>Obtiene todos los usuarios</description>
+                <to uri="direct:getAllUsers"/>
+            </get>
+            <!--             <get uri="/getExchangeRate"> -->
+            <!--                 <description>Obtiene el Tipo de Cambio del Dia</description> -->
+            <!--                 <to uri="direct:getExchangeRate"/> -->
+            <!--             </get>             -->
+        </rest>
+        <route id="_route1">
+            <from id="_from1" uri="direct:getAllUsers"/>
+            <log id="_log1" message=">>> ${body}"/>
+            <to id="_to1" uri="Mysql:{{sql.consulta_usuario}}"/>
+            <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
+        </route>
+        <!-- 		<route id="_route2"> -->
+        <!-- 			<from id="_from2" uri="direct:getExchangeRate" /> -->
+        <!-- 			<log id="_log2" message=">>> ${body}" /> -->
+        <!-- 			<to id="_to2" uri="Oracle:{{sql.consulta_tipo_cambio}}" /> -->
+        <!-- 			<convertBodyTo id="_convertBodyTo2" type="java.lang.String"/> -->
+        <!-- 		</route>		 -->
+    </camelContext>
+</beans>
